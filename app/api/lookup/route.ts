@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const runtime = 'edge'
+
 const CENSUS_API = 'https://data.transportation.gov/resource/az4n-8mr2.json'
 
 export async function GET(request: NextRequest) {

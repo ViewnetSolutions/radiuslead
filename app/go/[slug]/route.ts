@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// Required for Cloudflare Pages — all API routes must run on the edge runtime
+export const runtime = 'edge'
+
 // ── Affiliate link map ────────────────────────────────────────────────────────
 // Each slug maps to an env var containing the real affiliate URL.
 // Set the env vars in Vercel → Settings → Environment Variables.
