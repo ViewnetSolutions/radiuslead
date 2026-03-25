@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { Nav } from '@/components/Nav'
 
 interface Question {
   id:      string
@@ -259,20 +260,14 @@ export default function CoverageCheckerPage() {
   return (
     <div className="min-h-screen bg-[#080A0F] text-[#E8EDF5]" style={{ fontFamily: 'var(--font-body, DM Sans, sans-serif)' }}>
 
-      {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[#3A4558]/30 bg-[#080A0F]/90 backdrop-blur-md">
-        <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded bg-[#F5A623] flex items-center justify-center">
-              <span className="text-[#080A0F] text-base font-bold leading-none">R</span>
-            </div>
-            <span className="text-[#E8EDF5] text-xl font-bold tracking-widest" style={{ fontFamily: 'var(--font-display, sans-serif)' }}>RADIUSLEAD</span>
-          </Link>
-          <Link href="/trucking" className="text-[#8A96AA] text-sm hover:text-[#E8EDF5] transition-colors">
+      <Nav
+        centerSlot={<span/>}
+        rightSlot={
+          <Link href="/trucking" className="text-mist text-sm hover:text-ice transition-colors font-mono">
             ← Back
           </Link>
-        </div>
-      </nav>
+        }
+      />
 
       <main className="max-w-2xl mx-auto px-6 pt-28 pb-20">
 

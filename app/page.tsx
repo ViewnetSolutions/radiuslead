@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { Nav } from '@/components/Nav'
 
 const STATS = [
   { value: '600K+', label: 'Active Carriers' },
@@ -220,26 +221,13 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-ink font-body">
 
-      {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-ghost/30 bg-ink/90 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded bg-amber flex items-center justify-center">
-              <span className="font-display text-ink text-base leading-none">R</span>
-            </div>
-            <span className="font-display text-ice text-xl tracking-widest">RADIUSLEAD</span>
-          </div>
-          <div className="hidden md:flex items-center gap-8 text-sm text-mist">
-            <Link href="/trucking"      className="hover:text-ice transition-colors">Trucking</Link>
-            <Link href="/go/ehealth"    className="hover:text-ice transition-colors">Healthcare</Link>
-            <Link href="/go/smartasset" className="hover:text-ice transition-colors">Financial</Link>
-            <Link href="/go/gusto"      className="hover:text-ice transition-colors">Business</Link>
-          </div>
+      <Nav
+        rightSlot={
           <Link href="/trucking" className="btn-amber px-5 py-2 rounded text-sm font-display tracking-widest text-ink">
             GET LEADS →
           </Link>
-        </div>
-      </nav>
+        }
+      />
 
       {/* Hero */}
       <section className="relative min-h-screen flex items-center grid-bg pt-16 overflow-hidden">
