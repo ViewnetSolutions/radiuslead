@@ -451,7 +451,7 @@ export default function HomePage() {
             <Link href="/go/smartasset" className="hover:text-mist transition-colors">Financial</Link>
             <Link href="/go/gusto"      className="hover:text-mist transition-colors">Business</Link>
           </div>
-          <div className="text-ghost text-xs font-mono">© 2025 RADIUSLEAD · outreach@radiuslead.com</div>
+          <div className="text-ghost text-xs font-mono">© 2025 RADIUSLEAD · partnerships@radiuslead.com</div>
         </div>
         <div className="max-w-7xl mx-auto px-6 mt-6 pt-6 border-t border-ghost/10">
           <p className="text-ghost/50 text-xs font-mono leading-relaxed">

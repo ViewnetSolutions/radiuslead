@@ -520,7 +520,7 @@ export default function DispatchPage() {
             <a href="mailto:outreach@radiuslead.com" className="hover:text-white transition-colors" style={{ color: '#3A4558' }}>Contact</a>
           </div>
           <div className="font-mono text-xs" style={{ color: '#3A4558' }}>
-            © 2025 DispatchOS · outreach@radiuslead.com
+            © 2025 DispatchOS · partnerships@radiuslead.com
           </div>
         </div>
       </footer>

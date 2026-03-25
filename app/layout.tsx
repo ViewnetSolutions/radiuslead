@@ -33,6 +33,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" data-scroll-behavior="smooth" className={`${display.variable} ${body.variable} ${mono.variable}`}>
+      <head>
+        {/* Impact.com site verification */}
+        <meta name="impact-site-verification" value="4d1ef82f-18e7-48de-9333-a7a8988ec1db" />
+      </head>
       <body suppressHydrationWarning>{children}</body>
     </html>
   )

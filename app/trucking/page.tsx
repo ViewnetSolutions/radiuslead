@@ -260,7 +260,7 @@ export default function TruckingPage() {
             RadiusLead earns a referral fee from insurance carriers when you use our comparison link.
             This does not affect your quote or the rates you are shown.
           </p>
-          <div className="text-ghost text-xs font-mono">outreach@radiuslead.com</div>
+          <div className="text-ghost text-xs font-mono">partnerships@radiuslead.com</div>
         </div>
       </footer>
 
