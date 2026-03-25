@@ -25,6 +25,7 @@ export function Nav({ centerSlot, rightSlot }: NavProps) {
             <Link href="/go/ehealth"    className="hover:text-ice transition-colors">Healthcare</Link>
             <Link href="/go/smartasset" className="hover:text-ice transition-colors">Financial</Link>
             <Link href="/go/gusto"      className="hover:text-ice transition-colors">Business</Link>
+            <Link href="/dispatch"      className="hover:text-ice transition-colors" style={{ color: '#FF8C0099' }}>DispatchOS</Link>
           </div>
         )}
 
