@@ -1,11 +1,2 @@
-import { NextResponse } from 'next/server'
-
-export const runtime = 'edge'
-
-export async function GET() {
-  return NextResponse.json({
-    status:  'ok',
-    site:    'radiuslead.com',
-    time:    new Date().toISOString(),
-  })
-}
+// Health check served as static file instead — see public/status.html
+export {}

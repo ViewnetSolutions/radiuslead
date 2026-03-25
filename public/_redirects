@@ -1,0 +1,36 @@
+# Cloudflare Pages _redirects file
+# These are processed by Cloudflare's CDN directly — no server-side code needed
+# Format: /source  /destination  status_code
+# Docs: https://developers.cloudflare.com/pages/configuration/redirects/
+
+# ── Affiliate tracking redirects ─────────────────────────────────────────────
+# Replace the destination URLs with your real affiliate links once approved
+# These fire at CDN edge level — 0ms latency, no server involved
+
+# Trucking Insurance
+/go/insurance     https://www.simplybusiness.com    302
+/go/insureon      https://www.insureon.com          302
+/go/coverwallet   https://www.coverwallet.com       302
+/go/thimble       https://www.thimble.com           302
+/go/progressive   https://www.progressive.com/commercial  302
+/go/tivly         https://tivly.com                 302
+
+# Life & Health
+/go/selectquote   https://www.selectquote.com       302
+/go/policygenius  https://www.policygenius.com      302
+/go/ehealth       https://www.ehealthinsurance.com  302
+/go/gohealth      https://www.gohealth.com          302
+/go/assurance     https://www.assurance.com         302
+/go/healthmarkets https://www.healthmarkets.com     302
+
+# Financial
+/go/smartasset    https://smartasset.com            302
+/go/zoefinancial  https://www.zoefinancial.com      302
+/go/harness       https://www.harnesswealth.com     302
+
+# SaaS
+/go/hubspot       https://www.hubspot.com           302
+/go/gusto         https://gusto.com                 302
+/go/quickbooks    https://quickbooks.intuit.com     302
+/go/samsara       https://www.samsara.com           302
+/go/motive        https://gomotive.com              302
