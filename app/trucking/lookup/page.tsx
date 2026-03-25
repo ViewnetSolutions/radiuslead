@@ -4,6 +4,9 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Nav } from '@/components/Nav'
 
+// ── Call FMCSA API directly from the browser (CORS-enabled public API) ────────
+const FMCSA_API = 'https://data.transportation.gov/resource/az4n-8mr2.json'
+
 interface CarrierResult {
   dotNumber:       string
   legalName:       string
@@ -23,6 +26,84 @@ interface CarrierResult {
   premiumEstimate: { low: number; high: number; label: string }
 }
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function normalizeSafetyRating(raw: string): string {
+  const s = raw.toLowerCase().trim()
+  if (s === 's' || s.includes('satisfactory'))   return 'Satisfactory'
+  if (s === 'c' || s.includes('conditional'))    return 'Conditional'
+  if (s === 'u' || s.includes('unsatisfactory')) return 'Unsatisfactory'
+  return 'Not Rated'
+}
+
+function formatPhone(raw: string): string | null {
+  const d = raw.replace(/\D/g, '')
+  if (d.length === 10) return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`
+  if (d.length === 11 && d[0] === '1') return `(${d.slice(1,4)}) ${d.slice(4,7)}-${d.slice(7)}`
+  return raw.trim() || null
+}
+
+function extractMC(raw: string): string | null {
+  const m = raw.match(/MC-?(\d+)/i)
+  return m ? m[1] : null
+}
+
+function estimatePremium(trucks: number, hazmat: boolean, rating: string): { low: number; high: number; label: string } {
+  let base =
+    trucks <= 1  ? { low: 8000,   high: 18000   } :
+    trucks <= 10 ? { low: 15000,  high: 60000   } :
+    trucks <= 50 ? { low: 50000,  high: 250000  } :
+    trucks <= 200? { low: 200000, high: 800000  } :
+                   { low: 500000, high: 1500000 }
+
+  if (hazmat)                   { base.low = Math.round(base.low * 1.3);  base.high = Math.round(base.high * 1.4) }
+  if (rating === 'Conditional') { base.low = Math.round(base.low * 1.2);  base.high = Math.round(base.high * 1.3) }
+
+  const fmt = (n: number) => n >= 1000000 ? `$${(n/1000000).toFixed(1)}M` : `$${Math.round(n/1000)}K`
+  return { low: base.low, high: base.high, label: `${fmt(base.low)} – ${fmt(base.high)}/yr` }
+}
+
+function calcScore(trucks: number, hazmat: boolean, rating: string, hasEmail: boolean, isActive: boolean): number {
+  let score = 40
+  if (isActive)                          score += 20
+  if (trucks >= 2 && trucks <= 10)       score += 20
+  else if (trucks > 10)                  score += 12
+  if (rating === 'Conditional')          score += 15
+  else if (rating === 'Not Rated')       score += 10
+  if (hazmat)                            score += 8
+  if (hasEmail)                          score += 5
+  return Math.min(99, score)
+}
+
+// ── Parse raw FMCSA row into CarrierResult ────────────────────────────────────
+function parseRow(r: Record<string, string>, dot: string): CarrierResult {
+  const trucks       = parseInt(r.power_units ?? '0') || 0
+  const drivers      = parseInt(r.total_drivers ?? r.drivers ?? '0') || 0
+  const isActive     = String(r.out_of_service ?? '').toUpperCase() !== 'Y'
+  const safetyRating = normalizeSafetyRating(r.safety_rating ?? '')
+  const hazmat       = ['Y','1','true','yes'].includes(String(r.hazmat_flag ?? '').toLowerCase())
+  const email        = String(r.email_address ?? '').trim().toLowerCase() || null
+
+  return {
+    dotNumber:       dot,
+    legalName:       String(r.legal_name ?? '').trim(),
+    dbaName:         String(r.dba_name ?? '').trim() || null,
+    phone:           formatPhone(String(r.telephone ?? '')),
+    email,
+    city:            String(r.phy_city  ?? '').trim(),
+    state:           String(r.phy_state ?? '').trim(),
+    operatingStatus: isActive ? 'Active' : 'Inactive',
+    safetyRating,
+    totalTrucks:     trucks  || null,
+    totalDrivers:    drivers || null,
+    hazmat,
+    cargoCarried:    String(r.cargo_carried ?? '').trim() || null,
+    mcNumber:        extractMC(String(r.mc_mx_ff_numbers ?? '')),
+    score:           calcScore(trucks, hazmat, safetyRating, !!email, isActive),
+    premiumEstimate: estimatePremium(trucks, hazmat, safetyRating),
+  }
+}
+
+// ── UI Components ─────────────────────────────────────────────────────────────
 function ScoreBar({ score }: { score: number }) {
   const color = score >= 70 ? '#10B981' : score >= 50 ? '#F5A623' : '#EF4444'
   const label = score >= 70 ? 'Strong candidate' : score >= 50 ? 'Worth reviewing' : 'Lower opportunity'
@@ -33,8 +114,7 @@ function ScoreBar({ score }: { score: number }) {
         <span className="font-display text-2xl" style={{ color }}>{score}<span className="text-sm text-[#3A4558]">/99</span></span>
       </div>
       <div className="h-2 rounded-full bg-[#1A2033] overflow-hidden">
-        <div className="h-full rounded-full transition-all duration-1000"
-          style={{ width: `${score}%`, backgroundColor: color }}/>
+        <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${score}%`, backgroundColor: color }}/>
       </div>
       <div className="text-xs mt-1" style={{ color }}>{label}</div>
     </div>
@@ -55,6 +135,7 @@ function RatingBadge({ rating }: { rating: string }) {
   )
 }
 
+// ── Main Page ─────────────────────────────────────────────────────────────────
 export default function LookupPage() {
   const [dot,     setDot]     = useState('')
   const [loading, setLoading] = useState(false)
@@ -66,18 +147,23 @@ export default function LookupPage() {
     if (!clean) return
     setLoading(true); setError(null); setResult(null)
     try {
-      const res  = await fetch(`/api/lookup?dot=${clean}`)
+      // Call FMCSA API directly — public, CORS-enabled, no server needed
+      const url = `${FMCSA_API}?dot_number=${clean}&$limit=1`
+      const res  = await fetch(url, { cache: 'no-store' })
+
+      if (!res.ok) { setError('FMCSA API unavailable — please try again'); return }
+
       const data = await res.json()
-      if (!res.ok) { setError(data.error ?? 'Lookup failed'); return }
-      setResult(data)
-    } catch {
-      setError('Network error — please try again')
+      if (!data?.length) { setError('No carrier found for that DOT number'); return }
+
+      setResult(parseRow(data[0], clean))
+    } catch (e) {
+      setError('Network error — please check your connection and try again')
+      console.error(e)
     } finally {
       setLoading(false)
     }
   }
-
-  const fmt = (n: number) => `$${n.toLocaleString()}`
 
   return (
     <div className="min-h-screen bg-[#080A0F] text-[#E8EDF5]" style={{ fontFamily: 'var(--font-body, DM Sans, sans-serif)' }}>
@@ -132,9 +218,8 @@ export default function LookupPage() {
               style={{
                 fontFamily: 'var(--font-display, sans-serif)',
                 background: loading ? '#3A4558' : '#F5A623',
-                color: loading ? '#8A96AA' : '#080A0F',
-              }}
-            >
+                color:      loading ? '#8A96AA' : '#080A0F',
+              }}>
               {loading ? (
                 <span className="flex items-center gap-2">
                   <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -178,8 +263,6 @@ export default function LookupPage() {
                   </div>
                 </div>
               </div>
-
-              {/* Contact info */}
               <div className="grid grid-cols-2 gap-3 pt-4 border-t border-[#3A4558]/20">
                 <div>
                   <div className="font-mono text-[#3A4558] text-xs uppercase tracking-wider mb-1">Phone</div>
@@ -218,14 +301,12 @@ export default function LookupPage() {
               <div className="font-mono text-[#F5A623] text-xs tracking-widest uppercase mb-3">
                 Estimated Annual Insurance Premium
               </div>
-              <div className="text-4xl font-bold text-[#E8EDF5] mb-1"
-                style={{ fontFamily: 'var(--font-display, sans-serif)' }}>
+              <div className="text-4xl font-bold text-[#E8EDF5] mb-1" style={{ fontFamily: 'var(--font-display, sans-serif)' }}>
                 {result.premiumEstimate.label}
               </div>
               <div className="text-[#8A96AA] text-sm mb-6">
                 Based on {result.totalTrucks ?? 'unknown'} power unit{result.totalTrucks !== 1 ? 's' : ''},
-                {result.safetyRating} safety rating
-                {result.hazmat ? ', hazmat operations' : ''}.
+                {' '}{result.safetyRating} safety rating{result.hazmat ? ', hazmat operations' : ''}.
                 Actual rates depend on driving history, cargo, and routes.
               </div>
               <ScoreBar score={result.score}/>
@@ -236,8 +317,7 @@ export default function LookupPage() {
               <div className="font-mono text-[#F5A623] text-xs tracking-widest uppercase mb-2">
                 Is {result.legalName} overpaying?
               </div>
-              <h3 className="text-xl font-bold text-[#E8EDF5] mb-3"
-                style={{ fontFamily: 'var(--font-display, sans-serif)' }}>
+              <h3 className="text-xl font-bold text-[#E8EDF5] mb-3" style={{ fontFamily: 'var(--font-display, sans-serif)' }}>
                 GET ACTUAL QUOTES FOR THIS FLEET
               </h3>
               <p className="text-[#8A96AA] text-sm leading-relaxed mb-5">
@@ -261,15 +341,12 @@ export default function LookupPage() {
 
             {/* FMCSA link */}
             <div className="text-center">
-              <a
-                href={`https://safer.fmcsa.dot.gov/query.asp?query_type=queryCarrierSnapshot&query_param=USDOT&query_string=${result.dotNumber}`}
+              <a href={`https://safer.fmcsa.dot.gov/query.asp?query_type=queryCarrierSnapshot&query_param=USDOT&query_string=${result.dotNumber}`}
                 target="_blank" rel="noopener noreferrer"
-                className="font-mono text-[#3A4558] text-xs hover:text-[#8A96AA] transition-colors"
-              >
+                className="font-mono text-[#3A4558] text-xs hover:text-[#8A96AA] transition-colors">
                 View full FMCSA SAFER profile for DOT #{result.dotNumber} ↗
               </a>
             </div>
-
           </div>
         )}
 
@@ -279,7 +356,7 @@ export default function LookupPage() {
             <div className="font-mono text-[#3A4558] text-xs uppercase tracking-wider mb-4">Try an example</div>
             <div className="flex flex-wrap gap-3 justify-center">
               {['2345678','1234567','3456789'].map(d => (
-                <button key={d} onClick={() => { setDot(d); }}
+                <button key={d} onClick={() => setDot(d)}
                   className="font-mono text-sm text-[#8A96AA] border border-[#3A4558]/30 rounded-lg px-4 py-2 hover:border-[#F5A623]/30 hover:text-[#F5A623] transition-all">
                   DOT #{d}
                 </button>
